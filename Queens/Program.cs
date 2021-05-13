@@ -1,20 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 
 namespace Queens
 {
     class Program
     {
-        static int dimansion = 8;
+        static int dimansion = 12;
 
-        static bool[,] board;
+        static bool[,] chessBoard;
 
         static double successed = 0;
 
         static StringBuilder stringBuilder = new StringBuilder();
+
+        static bool[] yLayer;
+        static bool[] slashLayer;
+        static bool[] backslashLayer;
+
 
         static void Main(string[] args)
         {
@@ -25,19 +28,25 @@ namespace Queens
                 int.TryParse(args[0], out dimansion);
             }
 
-            board = new bool[dimansion, dimansion];
+            initChessBoard();
 
             placeQueenAtRow(0);
+
+            stopwatch.Stop();
 
             Console.WriteLine(stringBuilder.ToString());
 
             Console.WriteLine(successed);
 
-            Console.WriteLine(Math.Pow(dimansion, dimansion) - successed);
-
-            stopwatch.Stop();
-
             Console.WriteLine(stopwatch.ElapsedMilliseconds);
+        }
+
+        static void initChessBoard()
+        {
+            chessBoard = new bool[dimansion, dimansion];
+            yLayer = new bool[dimansion];
+            slashLayer = new bool[2 * dimansion - 1];
+            backslashLayer = new bool[2 * dimansion - 1];
         }
 
         static void placeQueenAtRow(int y)
@@ -58,11 +67,13 @@ namespace Queens
                     continue;
                 }
 
-                board[x, y] = true;
+                chessBoard[x, y] = true;
+                setLayer(x, y, true);
 
                 placeQueenAtRow(y + 1);
 
-                board[x, y] = false;
+                chessBoard[x, y] = false;
+                setLayer(x, y, false);
             }
 
             return;
@@ -70,103 +81,58 @@ namespace Queens
 
         static void writeBoard()
         {
+            stringBuilder.AppendLine($"//Solution {successed + 1}");
+
             for (int x = 0; x < dimansion; x++)
             {
                 for (int y = 0; y < dimansion; y++)
                 {
-                    stringBuilder.Append(Convert.ToInt32(board[x, y]));
+                    stringBuilder.Append(chessBoard[x, y] ? 'Q' : '.');
                 }
 
                 stringBuilder.AppendLine();
             }
 
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine();
+            stringBuilder.AppendLine().AppendLine();
+        }
+
+        static void setLayer(int x, int y, bool placeQueen)
+        {
+            setYLayer(x, y, placeQueen);
+            setSlashLayer(x, y, placeQueen);
+            setBackslashLayer(x, y, placeQueen);
+
+            static void setYLayer(int x, int y, bool placeQueen)
+            {
+                yLayer[x] = placeQueen;
+            }
+            static void setSlashLayer(int x, int y, bool placeQueen)
+            {
+                slashLayer[dimansion - 1 - x + y] = placeQueen;
+            }
+            static void setBackslashLayer(int x, int y, bool placeQueen)
+            {
+                backslashLayer[x + y] = placeQueen;
+            }
         }
 
         static bool check(int x, int y)
         {
-            return checkLeftTop(x, y) || checkLeftDown(x, y) || checkLeft(x, y);
-        }
-
-        static bool checkLeftTop(int x, int y)
-        {
-
-            for (int i = 0; i <= Math.Min(x, y); i++)
+            return checkLeft(x, y) || checkLeftTop(x, y) || checkLeftDown(x, y);
+            static bool checkLeftTop(int x, int y)
             {
-                if (board[x - i, y - i])
-                {
-                    return true;
-                }
+                return backslashLayer[x + y];
             }
-
-            return false;
-
-            //return Enumerable.Range(1, Math.Min(x, y)).Select(i => board[x - i, y - i]).Any(b => b);
-
-            //var a = Enumerable.Range(1, Math.Min(x, y)).Select(i => new BoardInfo
-            //{
-            //    X = x - i,
-            //    Y = y - i,
-            //    Queen = board[x - i, y - i]
-            //});
-            //return a.Any(b => b.Queen);
-        }
-
-        static bool checkLeft(int x, int y)
-        {
-            for (int i = 0; i <= y; i++)
+            static bool checkLeft(int x, int y)
             {
-                if (board[x, y - i])
-                {
-                    return true;
-                }
+                return yLayer[x];
             }
-
-            return false;
-
-            //return Enumerable.Range(1, y).Select(i => board[x, y - i]).Any(b => b);
-
-            //var a = Enumerable.Range(1, y).Select(i =>
-            // new BoardInfo
-            // {
-            //     X = x,
-            //     Y = y - i,
-            //     Queen = board[x, y - i]
-            // });
-            //return a.Any(b => b.Queen);
-        }
-
-        static bool checkLeftDown(int x, int y)
-        {
-            for (int i = 0; i <= Math.Min((dimansion - 1) - x, y); i++)
+            static bool checkLeftDown(int x, int y)
             {
-                if (board[x + i, y - i])
-                {
-                    return true;
-                }
+                return slashLayer[dimansion - 1 - x + y];
             }
-
-            return false;
-
-            //return Enumerable.Range(1, Math.Min((dimansion - 1) - x, y)).Select(i => board[x + i, y - i]).Any(b => b);
-
-            //var a = Enumerable.Range(1, Math.Min((dimansion - 1) - x, y)).Select(i =>
-            //    new BoardInfo
-            //    {
-            //        X = x + i,
-            //        Y = y - i,
-            //        Queen = board[x + i, y - i]
-            //    });
-            //return a.Any(b => b.Queen);
         }
-    }
 
-    public class BoardInfo
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public bool Queen { get; set; }
     }
 }
 
